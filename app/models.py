@@ -16,11 +16,12 @@ class User:
         }
 
 class Tracker:
-    def __init__(self, user_id, title, pixel_id, client_id=None):
+    def __init__(self, user_id, title, pixel_id, client_id=None, recipients=None):
         self.user_id = ObjectId(user_id) if user_id else None
         self.client_id = client_id
         self.title = title
         self.pixel_id = pixel_id
+        self.recipients = recipients or []
         self.created_at = datetime.utcnow()
 
     def to_dict(self):
@@ -29,6 +30,7 @@ class Tracker:
             "client_id": self.client_id,
             "title": self.title,
             "pixel_id": self.pixel_id,
+            "recipients": self.recipients,
             "created_at": self.created_at
         }
 

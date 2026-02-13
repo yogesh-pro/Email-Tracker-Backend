@@ -16,12 +16,13 @@ def create_tracker():
     data = request.get_json()
     title = data.get('title')
     client_id = data.get('client_id')
+    recipients = data.get('recipients', [])
 
     if not title:
         return jsonify({"message": "Title is required"}), 400
 
     pixel_id = str(uuid.uuid4())
-    new_tracker = Tracker(current_user_id, title, pixel_id, client_id)
+    new_tracker = Tracker(current_user_id, title, pixel_id, client_id, recipients)
 
     try:
         mongo.db.trackers.insert_one(new_tracker.to_dict())
