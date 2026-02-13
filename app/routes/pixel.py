@@ -17,7 +17,10 @@ def track_pixel(pixel_id):
         tracker = mongo.db.trackers.find_one({"pixel_id": pixel_id})
         if tracker:
             user_agent = request.headers.get('User-Agent')
-            ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
+            if request.headers.getlist("X-Forwarded-For"):
+                ip_address = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
+            else:
+                ip_address = request.remote_addr
             
             # Debug Info
             print(f"PIXEL ACCESS: {pixel_id} | IP: {ip_address} | UA: {user_agent}")
