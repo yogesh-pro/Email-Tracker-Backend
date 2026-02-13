@@ -54,6 +54,9 @@ def list_trackers():
         if tracker.get('user_id'):
             tracker['user_id'] = str(tracker['user_id'])
         
+        # Ensure recipients list works
+        tracker['recipients'] = tracker.get('recipients', [])
+        
         tracker['open_count'] = open_count
         output.append(tracker)
     
