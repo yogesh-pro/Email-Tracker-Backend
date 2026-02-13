@@ -60,13 +60,20 @@ def list_trackers():
     return jsonify(output), 200
 
 @tracker_bp.route('/<tracker_id>', methods=['DELETE'])
-@jwt_required()
+# @jwt_required()
 def delete_tracker(tracker_id):
-    current_user_id = get_jwt_identity()
-    result = mongo.db.trackers.delete_one({
+    # current_user_id = get_jwt_identity()
+    client_id = request.args.get('client_id')
+    
+    if not client_id:
+        return jsonify({"message": "Client ID required"}), 400
+
+    query = {
         "_id": ObjectId(tracker_id),
-        "user_id": ObjectId(current_user_id)
-    })
+        "client_id": client_id
+    }
+    
+    result = mongo.db.trackers.delete_one(query)
     
     if result.deleted_count:
         # Also delete associated open events
