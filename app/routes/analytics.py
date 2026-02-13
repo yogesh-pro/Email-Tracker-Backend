@@ -7,15 +7,17 @@ from bson import ObjectId
 analytics_bp = Blueprint('analytics', __name__)
 
 @analytics_bp.route('/<tracker_id>', methods=['GET'])
-@jwt_required()
+# @jwt_required()
 def get_analytics(tracker_id):
-    current_user_id = get_jwt_identity()
+    # current_user_id = get_jwt_identity()
+    client_id = request.args.get('client_id')
     
-    # Verify ownership
-    tracker = mongo.db.trackers.find_one({
-        "_id": ObjectId(tracker_id),
-        "user_id": ObjectId(current_user_id)
-    })
+    query = {"_id": ObjectId(tracker_id)}
+    if client_id:
+        query["client_id"] = client_id
+    
+    # Verify ownership or public access
+    tracker = mongo.db.trackers.find_one(query)
     
     if not tracker:
         return jsonify({"message": "Tracker not found or unauthorized"}), 404

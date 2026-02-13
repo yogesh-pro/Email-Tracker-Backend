@@ -15,12 +15,13 @@ def create_tracker():
     current_user_id = None
     data = request.get_json()
     title = data.get('title')
+    client_id = data.get('client_id')
 
     if not title:
         return jsonify({"message": "Title is required"}), 400
 
     pixel_id = str(uuid.uuid4())
-    new_tracker = Tracker(current_user_id, title, pixel_id)
+    new_tracker = Tracker(current_user_id, title, pixel_id, client_id)
 
     try:
         mongo.db.trackers.insert_one(new_tracker.to_dict())
@@ -33,15 +34,26 @@ def create_tracker():
         return jsonify({"message": str(e)}), 500
 
 @tracker_bp.route('/', methods=['GET'])
-@jwt_required()
+# @jwt_required()
 def list_trackers():
-    current_user_id = get_jwt_identity()
-    trackers = mongo.db.trackers.find({"user_id": ObjectId(current_user_id)})
+    # current_user_id = get_jwt_identity()
+    client_id = request.args.get('client_id')
+    
+    if not client_id:
+        return jsonify([]), 200
+
+    trackers = mongo.db.trackers.find({"client_id": client_id}).sort("created_at", -1)
     
     output = []
     for tracker in trackers:
+        # Get open count
+        open_count = mongo.db.open_events.count_documents({"tracker_id": tracker['_id']})
+        
         tracker['_id'] = str(tracker['_id'])
-        tracker['user_id'] = str(tracker['user_id'])
+        if tracker.get('user_id'):
+            tracker['user_id'] = str(tracker['user_id'])
+        
+        tracker['open_count'] = open_count
         output.append(tracker)
     
     return jsonify(output), 200
