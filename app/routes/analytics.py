@@ -46,6 +46,8 @@ def get_analytics(tracker_id):
                 "ip_address": event.get('ip_address'),
                 "user_agent": event.get('user_agent'),
                 "country": event.get('country'),
+                "city": event.get('city'),
+                "region": event.get('region'),
                 "device_type": event.get('device_type')
             })
             
