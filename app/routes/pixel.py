@@ -19,21 +19,33 @@ def track_pixel(pixel_id):
             user_agent = request.headers.get('User-Agent')
             ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
             
-            # Debounce Check: Check last event for this tracker & IP
-            last_event = mongo.db.open_events.find_one(
-                {
-                    "tracker_id": tracker['_id'],
-                    "ip_address": ip_address
-                },
-                sort=[("timestamp", -1)]
-            )
-            
+            # Debug Info
+            print(f"PIXEL ACCESS: {pixel_id} | IP: {ip_address} | UA: {user_agent}")
+
             should_log = True
-            if last_event:
-                time_diff = (datetime.utcnow() - last_event['timestamp']).total_seconds()
-                if time_diff < 30:
+
+            # 1. Ignore if within 10 seconds of creation (Self-open/Preview)
+            # Ensure tracker has created_at
+            if 'created_at' in tracker:
+                age = (datetime.utcnow() - tracker['created_at']).total_seconds()
+                if age < 2:
+                    print(f"Ignored immediate open (Age: {age}s)")
                     should_log = False
-                    print(f"Debounced open event for {pixel_id} from {ip_address} (last open {time_diff}s ago)")
+
+            # 2. Debounce Check: Check last event for this tracker (Ignore IP for strict debounce)
+            # If ANY open happened in the last 30s, ignore.
+            if should_log:
+                # Check last event specifically for this IP
+                last_event = mongo.db.open_events.find_one(
+                    {"tracker_id": tracker['_id'], "ip_address": ip_address},
+                    sort=[("timestamp", -1)]
+                )
+                
+                if last_event:
+                    time_diff = (datetime.utcnow() - last_event['timestamp']).total_seconds()
+                    if time_diff < 30:
+                        should_log = False
+                        print(f"Debounced open from IP {ip_address} (last open {time_diff}s ago)")
 
             if should_log:
                 # Geolocation Lookup
@@ -41,8 +53,7 @@ def track_pixel(pixel_id):
                 city = None
                 region = None
                 try:
-                    # Using ip-api.com (free, no key required for low volume)
-                    # Note: HTTP is faster/easier for this free tier
+                    # Using ip-api.com
                     geo_url = f"http://ip-api.com/json/{ip_address}?fields=status,message,country,city,regionName"
                     import requests
                     geo_resp = requests.get(geo_url, timeout=3)
@@ -52,6 +63,8 @@ def track_pixel(pixel_id):
                             country = geo_data.get('country')
                             city = geo_data.get('city')
                             region = geo_data.get('regionName')
+                        else:
+                            print(f"Geo API Error: {geo_data.get('message')}")
                 except Exception as e:
                     print(f"Geo lookup failed: {e}")
 
@@ -64,7 +77,7 @@ def track_pixel(pixel_id):
                     region=region
                 )
                 mongo.db.open_events.insert_one(new_event.to_dict())
-                print(f"Logged open event for {pixel_id} from {ip_address} in {city}, {country}")
+                print(f"LOGGED SUCCESS: {city}, {country}")
     except Exception as e:
         print(f"Error logging pixel: {e}")
 

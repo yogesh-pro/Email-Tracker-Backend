@@ -12,3 +12,4 @@ ua-parser==0.18.0
 user-agents==2.2.0
 geoip2==4.7.0
 Flask-Limiter==3.5.0
+requests==2.31.0
