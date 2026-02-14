@@ -4,9 +4,48 @@ from ..extensions import mongo, limiter
 from ..models import OpenEvent
 import io
 import base64
+import re
 from datetime import datetime
 
 pixel_bp = Blueprint('pixel', __name__)
+
+def parse_device(user_agent):
+    """Parse User-Agent string to determine device type."""
+    if not user_agent:
+        return "Unknown"
+    
+    ua = user_agent.lower()
+    
+    # Email proxies
+    if 'googleimageproxy' in ua or 'gmail' in ua:
+        return "Email Proxy"
+    if 'outlook' in ua or 'microsoft' in ua:
+        return "Desktop"
+    if 'yahoo' in ua:
+        return "Email Proxy"
+    
+    # Mobile devices
+    if any(m in ua for m in ['iphone', 'android', 'mobile', 'windows phone', 'blackberry']):
+        # Check for tablet (iPad, Android tablet)
+        if 'ipad' in ua:
+            return "Tablet"
+        if 'android' in ua and 'mobile' not in ua:
+            return "Tablet"
+        return "Mobile"
+    
+    # Tablets
+    if 'ipad' in ua or 'tablet' in ua:
+        return "Tablet"
+    
+    # Desktop
+    if any(d in ua for d in ['windows', 'macintosh', 'linux', 'x11', 'cros']):
+        return "Desktop"
+    
+    # Bots
+    if any(b in ua for b in ['bot', 'crawler', 'spider', 'curl', 'wget']):
+        return "Email Proxy"
+    
+    return "Unknown"
 
 @pixel_bp.route('/<pixel_id>.png', methods=['GET'])
 @limiter.limit("10 per minute") # Rate limit specifically for pixel
@@ -22,8 +61,11 @@ def track_pixel(pixel_id):
             else:
                 ip_address = request.remote_addr
             
+            # Parse device type
+            device_type = parse_device(user_agent)
+            
             # Debug Info
-            print(f"PIXEL ACCESS: {pixel_id} | IP: {ip_address} | UA: {user_agent}")
+            print(f"PIXEL ACCESS: {pixel_id} | IP: {ip_address} | UA: {user_agent} | Device: {device_type}")
 
             should_log = True
 
@@ -54,10 +96,11 @@ def track_pixel(pixel_id):
                 new_event = OpenEvent(
                     tracker_id=tracker['_id'],
                     ip_address=ip_address,
-                    user_agent=user_agent
+                    user_agent=user_agent,
+                    device_type=device_type
                 )
                 mongo.db.open_events.insert_one(new_event.to_dict())
-                print(f"LOGGED SUCCESS: {pixel_id} from {ip_address}")
+                print(f"LOGGED SUCCESS: {pixel_id} from {ip_address} ({device_type})")
     except Exception as e:
         print(f"Error logging pixel: {e}")
 
@@ -77,3 +120,4 @@ def track_pixel(pixel_id):
     response.headers['Expires'] = '0'
     
     return response
+

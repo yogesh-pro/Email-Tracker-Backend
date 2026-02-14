@@ -7,7 +7,6 @@ from bson import ObjectId
 analytics_bp = Blueprint('analytics', __name__)
 
 @analytics_bp.route('/<tracker_id>', methods=['GET'])
-@analytics_bp.route('/<tracker_id>', methods=['GET'])
 # @jwt_required()
 def get_analytics(tracker_id):
     try:

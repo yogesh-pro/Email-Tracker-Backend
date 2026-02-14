@@ -35,16 +35,18 @@ class Tracker:
         }
 
 class OpenEvent:
-    def __init__(self, tracker_id, ip_address, user_agent):
+    def __init__(self, tracker_id, ip_address, user_agent, device_type=None):
         self.tracker_id = ObjectId(tracker_id)
         self.timestamp = datetime.utcnow()
         self.ip_address = ip_address
         self.user_agent = user_agent
+        self.device_type = device_type or "Unknown"
 
     def to_dict(self):
         return {
             "tracker_id": self.tracker_id,
             "timestamp": self.timestamp,
             "ip_address": self.ip_address,
-            "user_agent": self.user_agent
+            "user_agent": self.user_agent,
+            "device_type": self.device_type
         }
