@@ -3,15 +3,25 @@ from datetime import datetime
 from flask_pymongo import ObjectId
 
 class User:
-    def __init__(self, username, password_hash):
-        self.username = username
+    def __init__(self, email, password_hash=None, google_id=None, is_verified=False, is_premium=False):
+        self.email = email
         self.password_hash = password_hash
+        self.google_id = google_id
+        self.is_verified = is_verified
+        self.is_premium = is_premium
+        self.otp_code = None
+        self.otp_expiry = None
         self.created_at = datetime.utcnow()
     
     def to_dict(self):
         return {
-            "username": self.username,
+            "email": self.email,
             "password_hash": self.password_hash,
+            "google_id": self.google_id,
+            "is_verified": self.is_verified,
+            "is_premium": self.is_premium,
+            "otp_code": self.otp_code,
+            "otp_expiry": self.otp_expiry,
             "created_at": self.created_at
         }
 
