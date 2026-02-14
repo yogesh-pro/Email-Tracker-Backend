@@ -51,36 +51,13 @@ def track_pixel(pixel_id):
                         print(f"Debounced open from IP {ip_address} (last open {time_diff}s ago)")
 
             if should_log:
-                # Geolocation Lookup
-                country = None
-                city = None
-                region = None
-                try:
-                    # Using ip-api.com
-                    geo_url = f"http://ip-api.com/json/{ip_address}?fields=status,message,country,city,regionName"
-                    import requests
-                    geo_resp = requests.get(geo_url, timeout=3)
-                    if geo_resp.status_code == 200:
-                        geo_data = geo_resp.json()
-                        if geo_data.get('status') == 'success':
-                            country = geo_data.get('country')
-                            city = geo_data.get('city')
-                            region = geo_data.get('regionName')
-                        else:
-                            print(f"Geo API Error: {geo_data.get('message')}")
-                except Exception as e:
-                    print(f"Geo lookup failed: {e}")
-
                 new_event = OpenEvent(
                     tracker_id=tracker['_id'],
                     ip_address=ip_address,
-                    user_agent=user_agent,
-                    country=country,
-                    city=city,
-                    region=region
+                    user_agent=user_agent
                 )
                 mongo.db.open_events.insert_one(new_event.to_dict())
-                print(f"LOGGED SUCCESS: {city}, {country}")
+                print(f"LOGGED SUCCESS: {pixel_id} from {ip_address}")
     except Exception as e:
         print(f"Error logging pixel: {e}")
 
